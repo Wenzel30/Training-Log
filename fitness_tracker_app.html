@@ -1,0 +1,1086 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="FitPulse">
+    <title>FitPulse - Workout & Body Composition Tracker</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: {
+                        appBg: '#F3F5F8',
+                        pillTrack: '#E6EAEF',
+                        barEmpty: '#DCE1E7',
+                        inkDark: '#0F172A',
+                        inkMuted: '#64748B',
+                        brandBlue: '#2563EB',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #F3F5F8;
+            color: #0F172A;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .safe-top { padding-top: max(0.75rem, env(safe-area-inset-top)); }
+        .safe-bottom { padding-bottom: max(0.65rem, env(safe-area-inset-bottom)); }
+        ::-webkit-scrollbar { width: 5px; height: 5px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 9999px; }
+    </style>
+</head>
+<body class="h-full flex flex-col overflow-hidden bg-appBg text-inkDark">
+
+    <!-- Top App Header -->
+    <header class="bg-white/90 backdrop-blur-md border-b border-slate-200/80 px-4 py-3 safe-top flex items-center justify-between z-20 shrink-0">
+        <div class="flex items-center space-x-2.5">
+            <div class="w-9 h-9 rounded-xl bg-slate-900 text-white flex items-center justify-center shadow-sm">
+                <i class="fa-solid fa-dumbbell text-sm"></i>
+            </div>
+            <div>
+                <h1 class="font-extrabold text-base tracking-tight text-slate-900 leading-tight">FitPulse</h1>
+                <p class="text-[11px] font-medium text-slate-500">Training & Body Composition</p>
+            </div>
+        </div>
+        <div class="flex items-center space-x-2">
+            <button type="button" onclick="openShareModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center space-x-1.5 shadow-sm">
+                <i class="fa-solid fa-link text-xs"></i>
+                <span>Get Phone Link</span>
+            </button>
+            <span id="header-active-badge" class="text-[11px] font-semibold bg-slate-100 text-slate-600 px-2.5 py-1 rounded-full border border-slate-200/80 hidden sm:inline-block">
+                Workouts
+            </span>
+        </div>
+    </header>
+
+    <!-- Main Scrollable Viewport -->
+    <main class="flex-1 overflow-y-auto pb-28 pt-4 px-4 max-w-xl w-full mx-auto space-y-5">
+
+        <!-- =========================================================
+             TAB 1: WORKOUTS
+             ========================================================= -->
+        <section id="tab-workouts" class="tab-content space-y-5">
+            <div class="bg-pillTrack p-1 rounded-xl grid grid-cols-2 gap-1">
+                <button type="button" onclick="switchWorkoutSubTab('log')" id="subtab-btn-log"
+                    class="py-2 text-xs font-bold rounded-lg bg-white text-slate-900 shadow-sm transition">
+                    Log Workout
+                </button>
+                <button type="button" onclick="switchWorkoutSubTab('templates')" id="subtab-btn-templates"
+                    class="py-2 text-xs font-semibold rounded-lg text-slate-600 hover:text-slate-900 transition">
+                    Routines (<span id="tpl-tab-badge">0</span>)
+                </button>
+            </div>
+
+            <!-- Sub-tab A: Active Session Logger -->
+            <div id="workout-subtab-log" class="space-y-5">
+                <div class="bg-white border border-slate-200/90 rounded-2xl p-4 sm:p-5 shadow-[0_1px_2px_rgba(15,23,42,0.03)] space-y-4">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h2 class="text-base font-extrabold text-slate-900">Workout Session Logger</h2>
+                            <p class="text-[11px] text-slate-500 mt-0.5">Load a full routine or build a custom session</p>
+                        </div>
+                        <button type="button" onclick="resetActiveSession()" class="text-[11px] font-semibold text-slate-500 hover:text-slate-800 bg-slate-100 px-2.5 py-1 rounded-lg transition">
+                            Clear Session
+                        </button>
+                    </div>
+
+                    <div class="bg-slate-50 border border-slate-200/80 rounded-xl p-3">
+                        <label for="load-template-select" class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
+                            <i class="fa-solid fa-bolt text-amber-500 mr-1"></i> Load Full Workout Routine
+                        </label>
+                        <select id="load-template-select" onchange="applySelectedRoutine(this.value)"
+                            class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs font-semibold text-slate-800 focus:outline-none focus:border-blue-500 transition">
+                            <option value="">-- Choose a full routine --</option>
+                        </select>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                        <div class="sm:col-span-2">
+                            <label for="session-title" class="block text-xs font-semibold text-slate-600 mb-1">Session Name</label>
+                            <input type="text" id="session-title" placeholder="e.g., Full Chest & Triceps Day"
+                                class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-sm font-bold text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-blue-500 transition">
+                        </div>
+                        <div>
+                            <label for="session-date" class="block text-xs font-semibold text-slate-600 mb-1">Date</label>
+                            <input type="date" id="session-date" required
+                                class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm font-medium text-slate-900 focus:bg-white focus:outline-none focus:border-blue-500 transition">
+                        </div>
+                    </div>
+
+                    <div class="space-y-2.5">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-extrabold uppercase tracking-wider text-slate-500">
+                                Exercises (<span id="session-ex-count">0</span>)
+                            </span>
+                            <button type="button" onclick="addExerciseToActiveSession()"
+                                class="text-xs font-bold text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition flex items-center space-x-1">
+                                <i class="fa-solid fa-plus text-[10px]"></i>
+                                <span>Add Exercise</span>
+                            </button>
+                        </div>
+                        <div id="active-session-exercises" class="space-y-2.5"></div>
+                    </div>
+
+                    <div>
+                        <label for="session-notes" class="block text-xs font-semibold text-slate-600 mb-1">Session Notes (Optional)</label>
+                        <input type="text" id="session-notes" placeholder="e.g., Great pump, felt strong"
+                            class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-sm text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-blue-500 transition">
+                    </div>
+
+                    <button type="button" onclick="handleSaveWorkoutSession()"
+                        class="w-full bg-slate-900 hover:bg-slate-800 active:scale-[0.99] text-white font-bold text-sm py-3 rounded-xl shadow-sm transition flex items-center justify-center space-x-2">
+                        <i class="fa-solid fa-circle-check text-xs text-emerald-400"></i>
+                        <span>Finish & Save Workout</span>
+                    </button>
+                </div>
+
+                <div class="space-y-2.5">
+                    <div class="flex items-center justify-between px-0.5">
+                        <h3 class="text-base font-extrabold text-slate-900">Recent Workout History</h3>
+                        <span id="workout-history-count" class="text-xs font-semibold text-slate-500">0 sessions</span>
+                    </div>
+                    <div id="workout-history-list" class="space-y-2.5"></div>
+                </div>
+            </div>
+
+            <!-- Sub-tab B: Routines Builder -->
+            <div id="workout-subtab-templates" class="hidden space-y-5">
+                <div class="bg-white border border-slate-200/90 rounded-2xl p-4 sm:p-5 shadow-[0_1px_2px_rgba(15,23,42,0.03)] space-y-4">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h2 id="routine-builder-heading" class="text-base font-extrabold text-slate-900">Create Full Routine</h2>
+                            <p class="text-xs text-slate-500 mt-0.5">Build multi-exercise templates like Chest Day or Leg Day.</p>
+                        </div>
+                        <button type="button" id="cancel-edit-routine-btn" onclick="resetRoutineBuilder()" class="hidden text-xs font-semibold text-rose-600 bg-rose-50 px-2.5 py-1 rounded-lg">
+                            Cancel Edit
+                        </button>
+                    </div>
+
+                    <div class="space-y-3.5">
+                        <div>
+                            <label for="routine-name-input" class="block text-xs font-semibold text-slate-600 mb-1">Routine Name</label>
+                            <input type="text" id="routine-name-input" placeholder="e.g., Full Chest & Triceps Day"
+                                class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm font-bold text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-blue-500 transition">
+                        </div>
+
+                        <div class="space-y-2.5">
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs font-extrabold uppercase tracking-wider text-slate-500">
+                                    Routine Exercises (<span id="builder-ex-count">0</span>)
+                                </span>
+                                <button type="button" onclick="addExerciseToRoutineBuilder()"
+                                    class="text-xs font-bold text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition flex items-center space-x-1">
+                                    <i class="fa-solid fa-plus text-[10px]"></i>
+                                    <span>Add Exercise</span>
+                                </button>
+                            </div>
+                            <div id="routine-builder-exercises" class="space-y-2.5"></div>
+                        </div>
+
+                        <button type="button" onclick="handleSaveRoutineTemplate()"
+                            class="w-full bg-blue-600 hover:bg-blue-700 active:scale-[0.99] text-white font-bold text-sm py-3 rounded-xl shadow-sm transition flex items-center justify-center space-x-2">
+                            <i class="fa-solid fa-bookmark text-xs"></i>
+                            <span id="save-routine-btn-label">Save Full Routine</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="space-y-2.5">
+                    <div class="flex items-center justify-between px-0.5">
+                        <h3 class="text-base font-extrabold text-slate-900">Saved Routines</h3>
+                        <span id="templates-list-count" class="text-xs font-semibold text-slate-500">0 routines</span>
+                    </div>
+                    <div id="templates-list" class="space-y-2.5"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- =========================================================
+             TAB 2: BODY METRICS
+             ========================================================= -->
+        <section id="tab-metrics" class="tab-content hidden space-y-5">
+            <div class="bg-white border border-slate-200/90 rounded-2xl p-4 sm:p-5 shadow-[0_1px_2px_rgba(15,23,42,0.03)] space-y-4">
+                <div>
+                    <h2 class="text-base font-extrabold text-slate-900">Log Body Metrics</h2>
+                    <p class="text-xs text-slate-500 mt-0.5">Track your body weight alongside muscle and body fat percentages.</p>
+                </div>
+
+                <form id="metrics-form" onsubmit="handleMetricsSubmit(event)" class="space-y-3.5">
+                    <div>
+                        <label for="m-date" class="block text-xs font-semibold text-slate-600 mb-1">Date</label>
+                        <input type="date" id="m-date" required
+                            class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-900 focus:bg-white focus:outline-none focus:border-blue-500 transition">
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-2.5">
+                        <div>
+                            <label for="m-weight" class="block text-xs font-semibold text-slate-600 mb-1">Weight (kg)</label>
+                            <input type="number" id="m-weight" step="0.1" min="20" max="350" required placeholder="78.5"
+                                class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-bold text-slate-900 focus:bg-white focus:outline-none focus:border-blue-500 transition">
+                        </div>
+                        <div>
+                            <label for="m-muscle" class="block text-xs font-semibold text-slate-600 mb-1">Muscle (%)</label>
+                            <input type="number" id="m-muscle" step="0.1" min="5" max="90" required placeholder="42.4"
+                                class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-bold text-slate-900 focus:bg-white focus:outline-none focus:border-blue-500 transition">
+                        </div>
+                        <div>
+                            <label for="m-fat" class="block text-xs font-semibold text-slate-600 mb-1">Fat (%)</label>
+                            <input type="number" id="m-fat" step="0.1" min="2" max="75" required placeholder="15.8"
+                                class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-bold text-slate-900 focus:bg-white focus:outline-none focus:border-blue-500 transition">
+                        </div>
+                    </div>
+
+                    <button type="submit"
+                        class="w-full bg-slate-900 hover:bg-slate-800 active:scale-[0.99] text-white font-bold text-sm py-3 rounded-xl shadow-sm transition flex items-center justify-center space-x-2">
+                        <i class="fa-solid fa-plus text-xs"></i>
+                        <span>Save Measurement</span>
+                    </button>
+                </form>
+            </div>
+
+            <div class="space-y-2.5">
+                <div class="flex items-center justify-between px-0.5">
+                    <h3 class="text-base font-extrabold text-slate-900">Measurement History</h3>
+                    <span id="metrics-history-count" class="text-xs font-semibold text-slate-500">0 entries</span>
+                </div>
+
+                <div class="bg-white border border-slate-200/90 rounded-2xl overflow-hidden shadow-[0_1px_2px_rgba(15,23,42,0.03)]">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse text-sm">
+                            <thead>
+                                <tr class="bg-slate-50/90 border-b border-slate-200/80 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                                    <th class="py-3 px-3.5">Date</th>
+                                    <th class="py-3 px-2.5">Weight</th>
+                                    <th class="py-3 px-2.5">Muscle</th>
+                                    <th class="py-3 px-2.5">Fat</th>
+                                    <th class="py-3 px-3.5 text-right">Del</th>
+                                </tr>
+                            </thead>
+                            <tbody id="metrics-table-body" class="divide-y divide-slate-100"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pt-1 pb-2 flex items-center justify-center space-x-4 text-xs text-slate-400">
+                <button type="button" onclick="confirmResetDemoData()" class="hover:text-slate-600 underline underline-offset-2 transition">Reset Demo Data</button>
+                <span>•</span>
+                <button type="button" onclick="confirmClearAllData()" class="hover:text-rose-600 underline underline-offset-2 transition">Clear All Data</button>
+            </div>
+        </section>
+
+        <!-- =========================================================
+             TAB 3: OVERVIEW
+             ========================================================= -->
+        <section id="tab-overview" class="tab-content hidden space-y-5">
+            <div class="space-y-2.5">
+                <div class="bg-pillTrack p-1 rounded-xl grid grid-cols-2 gap-1">
+                    <button type="button" onclick="setOverviewMode('summary')" id="ov-mode-summary"
+                        class="py-2 text-xs font-bold rounded-lg bg-white text-slate-900 shadow-sm transition">
+                        Summary & Muscle Sets
+                    </button>
+                    <button type="button" onclick="setOverviewMode('monthly')" id="ov-mode-monthly"
+                        class="py-2 text-xs font-semibold rounded-lg text-slate-600 hover:text-slate-900 transition">
+                        Monthly History Breakdown
+                    </button>
+                </div>
+
+                <div id="summary-time-filters" class="bg-pillTrack p-1 rounded-xl grid grid-cols-4 gap-1">
+                    <button type="button" onclick="setTimeFilter('7')" id="filter-7" class="time-filter-btn py-2 text-xs font-semibold rounded-lg text-slate-700 transition">7 days</button>
+                    <button type="button" onclick="setTimeFilter('30')" id="filter-30" class="time-filter-btn py-2 text-xs font-bold rounded-lg bg-white text-slate-900 shadow-sm transition">30 days</button>
+                    <button type="button" onclick="setTimeFilter('90')" id="filter-90" class="time-filter-btn py-2 text-xs font-semibold rounded-lg text-slate-700 transition">90 days</button>
+                    <button type="button" onclick="setTimeFilter('all')" id="filter-all" class="time-filter-btn py-2 text-xs font-semibold rounded-lg text-slate-700 transition">All</button>
+                </div>
+            </div>
+
+            <!-- SUMMARY VIEW CONTAINER -->
+            <div id="overview-summary-container" class="space-y-5">
+                <div class="grid grid-cols-3 gap-2.5">
+                    <div class="bg-white border border-slate-200/90 rounded-2xl p-3.5 shadow-[0_1px_2px_rgba(15,23,42,0.03)]">
+                        <p class="text-xs font-medium text-slate-500">Workouts</p>
+                        <p id="kpi-workouts" class="text-2xl sm:text-3xl font-extrabold text-slate-900 mt-1 tracking-tight">0</p>
+                    </div>
+                    <div class="bg-white border border-slate-200/90 rounded-2xl p-3.5 shadow-[0_1px_2px_rgba(15,23,42,0.03)]">
+                        <p class="text-xs font-medium text-slate-500">Sets</p>
+                        <p id="kpi-sets" class="text-2xl sm:text-3xl font-extrabold text-slate-900 mt-1 tracking-tight">0</p>
+                    </div>
+                    <div class="bg-white border border-slate-200/90 rounded-2xl p-3.5 shadow-[0_1px_2px_rgba(15,23,42,0.03)]">
+                        <p class="text-xs font-medium text-slate-500">Volume</p>
+                        <p class="mt-1 tracking-tight">
+                            <span id="kpi-volume" class="text-2xl sm:text-3xl font-extrabold text-slate-900">0</span>
+                            <span class="text-xs font-semibold text-slate-500 ml-0.5">kg</span>
+                        </p>
+                    </div>
+                </div>
+
+                <div class="space-y-2.5">
+                    <h2 class="text-lg font-extrabold text-slate-900 tracking-tight px-0.5">Sets per muscle group</h2>
+                    <div id="muscle-group-card" class="bg-white border border-slate-200/90 rounded-2xl p-4 sm:p-5 shadow-[0_1px_2px_rgba(15,23,42,0.03)] space-y-4"></div>
+                </div>
+
+                <div class="space-y-2.5">
+                    <div class="flex items-center justify-between px-0.5">
+                        <h2 class="text-lg font-extrabold text-slate-900 tracking-tight">Body Composition</h2>
+                        <span class="text-[11px] font-semibold text-slate-500">Weight (kg) • Muscle (%) • Fat (%)</span>
+                    </div>
+                    <div class="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-[0_1px_2px_rgba(15,23,42,0.03)]">
+                        <div id="composition-chart-wrapper" class="relative h-60 w-full">
+                            <canvas id="compositionChart"></canvas>
+                        </div>
+                        <div id="composition-empty-state" class="hidden py-10 text-center text-xs text-slate-400">
+                            No body metrics recorded yet.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MONTHLY VIEW CONTAINER -->
+            <div id="overview-monthly-container" class="hidden space-y-3">
+                <div class="flex items-center justify-between px-0.5">
+                    <h2 class="text-lg font-extrabold text-slate-900 tracking-tight">Monthly Training Breakdown</h2>
+                    <span id="monthly-count-badge" class="text-xs font-semibold text-slate-500">0 months</span>
+                </div>
+                <div id="monthly-breakdown-list" class="space-y-3"></div>
+            </div>
+
+            <div class="pt-1 pb-2 flex items-center justify-center space-x-4 text-xs text-slate-400">
+                <button type="button" onclick="confirmResetDemoData()" class="hover:text-slate-600 underline underline-offset-2 transition">Reset Demo Data</button>
+                <span>•</span>
+                <button type="button" onclick="confirmClearAllData()" class="hover:text-rose-600 underline underline-offset-2 transition">Clear All Data</button>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Bottom Tab Navigation Bar -->
+    <nav class="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-slate-200/90 pt-2 safe-bottom px-6 flex justify-around items-center z-30 shadow-[0_-2px_10px_rgba(15,23,42,0.04)]">
+        <button type="button" onclick="switchTab('workouts')" id="nav-workouts"
+            class="flex flex-col items-center space-y-1 text-slate-900 font-bold py-1 px-4 rounded-xl transition">
+            <i class="fa-solid fa-dumbbell text-lg"></i>
+            <span class="text-[11px]">Workouts</span>
+        </button>
+        <button type="button" onclick="switchTab('metrics')" id="nav-metrics"
+            class="flex flex-col items-center space-y-1 text-slate-400 hover:text-slate-700 font-medium py-1 px-4 rounded-xl transition">
+            <i class="fa-solid fa-weight-scale text-lg"></i>
+            <span class="text-[11px]">Body Metrics</span>
+        </button>
+        <button type="button" onclick="switchTab('overview')" id="nav-overview"
+            class="flex flex-col items-center space-y-1 text-slate-400 hover:text-slate-700 font-medium py-1 px-4 rounded-xl transition">
+            <i class="fa-solid fa-chart-simple text-lg"></i>
+            <span class="text-[11px]">Overview</span>
+        </button>
+    </nav>
+
+    <!-- Share / Get Link Modal -->
+    <div id="share-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white border border-slate-200 rounded-2xl p-5 max-w-sm w-full shadow-xl space-y-4">
+            <div class="flex items-center justify-between">
+                <h3 class="font-extrabold text-base text-slate-900">Open on iPhone in Safari</h3>
+                <button type="button" onclick="closeShareModal()" class="text-slate-400 hover:text-slate-700 p-1">
+                    <i class="fa-solid fa-xmark text-sm"></i>
+                </button>
+            </div>
+            <p class="text-xs text-slate-500 leading-relaxed">
+                Because this app runs locally in your browser, copy this web link and text or AirDrop it to your iPhone, then open it in <b>Safari</b>:
+            </p>
+            <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-2">
+                <input type="text" id="share-url-input" readonly
+                    class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs font-mono text-slate-700 text-center select-all">
+            </div>
+            <div class="flex space-x-2">
+                <button type="button" onclick="copyAppUrl()"
+                    class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs py-2.5 rounded-xl transition flex items-center justify-center space-x-1.5">
+                    <i class="fa-solid fa-copy text-xs"></i>
+                    <span>Copy Link</span>
+                </button>
+                <button type="button" onclick="closeShareModal()"
+                    class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs py-2.5 rounded-xl transition">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification Banner -->
+    <div id="toast-banner" class="fixed top-16 left-1/2 -translate-x-1/2 z-50 pointer-events-none opacity-0 transition-all duration-300 translate-y-[-8px]">
+        <div class="bg-slate-900 text-white text-xs font-semibold px-4 py-2.5 rounded-full shadow-lg flex items-center space-x-2">
+            <i class="fa-solid fa-circle-check text-emerald-400"></i>
+            <span id="toast-text">Saved!</span>
+        </div>
+    </div>
+
+    <!-- Confirm Modal -->
+    <div id="confirm-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white border border-slate-200 rounded-2xl p-5 max-w-sm w-full shadow-xl space-y-4">
+            <div class="flex items-start space-x-3">
+                <div class="w-9 h-9 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                </div>
+                <div>
+                    <h3 id="confirm-modal-title" class="font-extrabold text-base text-slate-900">Confirm Action</h3>
+                    <p id="confirm-modal-msg" class="text-xs text-slate-500 mt-1 leading-relaxed">Are you sure?</p>
+                </div>
+            </div>
+            <div class="flex space-x-2.5 pt-1">
+                <button type="button" id="confirm-modal-cancel" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs py-2.5 rounded-xl transition">Cancel</button>
+                <button type="button" id="confirm-modal-ok" class="flex-1 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs py-2.5 rounded-xl transition">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const MUSCLE_GROUPS = [
+            { name: 'Chest', barColor: '#2563EB', badgeBg: 'bg-blue-50 text-blue-700 border-blue-200/80' },
+            { name: 'Back', barColor: '#059669', badgeBg: 'bg-emerald-50 text-emerald-700 border-emerald-200/80' },
+            { name: 'Legs', barColor: '#7C3AED', badgeBg: 'bg-purple-50 text-purple-700 border-purple-200/80' },
+            { name: 'Shoulders', barColor: '#D97706', badgeBg: 'bg-amber-50 text-amber-700 border-amber-200/80' },
+            { name: 'Biceps', barColor: '#DB2777', badgeBg: 'bg-pink-50 text-pink-700 border-pink-200/80' },
+            { name: 'Triceps', barColor: '#0284C7', badgeBg: 'bg-sky-50 text-sky-700 border-sky-200/80' },
+            { name: 'Core', barColor: '#0D9488', badgeBg: 'bg-teal-50 text-teal-700 border-teal-200/80' }
+        ];
+
+        const EXERCISE_KEYWORDS = [
+            { muscle: 'Chest', keys: ['bench', 'chest', 'pec', 'push up', 'push-up', 'pushup', 'fly', 'incline', 'decline', 'dip'] },
+            { muscle: 'Back', keys: ['deadlift', 'row', 'pull up', 'pull-up', 'pullup', 'chin up', 'lat', 'pulldown', 'back', 'shrug'] },
+            { muscle: 'Legs', keys: ['squat', 'leg', 'lunge', 'calf', 'calves', 'hamstring', 'quad', 'glute', 'hip thrust', 'rdl'] },
+            { muscle: 'Shoulders', keys: ['overhead', 'ohp', 'shoulder', 'military', 'lateral', 'front raise', 'rear delt', 'arnold', 'face pull'] },
+            { muscle: 'Biceps', keys: ['bicep', 'curl', 'hammer', 'preacher', 'concentration'] },
+            { muscle: 'Triceps', keys: ['tricep', 'pushdown', 'skullcrusher', 'extension'] },
+            { muscle: 'Core', keys: ['plank', 'crunch', 'ab', 'abs', 'sit up', 'russian twist', 'leg raise', 'core'] }
+        ];
+
+        const STORAGE_KEYS = {
+            WORKOUTS: 'fitpulse_v3_sessions',
+            TEMPLATES: 'fitpulse_v3_routines',
+            METRICS: 'fitpulse_v3_metrics',
+            INITIALIZED: 'fitpulse_v3_initialized'
+        };
+
+        function getRelativeDateStr(daysAgo) {
+            const d = new Date();
+            d.setDate(d.getDate() - daysAgo);
+            return d.toISOString().split('T')[0];
+        }
+
+        function createDemoDataset() {
+            return {
+                workouts: [
+                    {
+                        id: 101, title: 'Full Chest & Triceps Day', date: getRelativeDateStr(1), notes: 'Great pump',
+                        exercises: [
+                            { name: 'Barbell Bench Press', muscle: 'Chest', sets: 4, reps: 8, weight: 80 },
+                            { name: 'Incline Dumbbell Press', muscle: 'Chest', sets: 3, reps: 10, weight: 30 },
+                            { name: 'Tricep Rope Pushdown', muscle: 'Triceps', sets: 3, reps: 12, weight: 25 }
+                        ]
+                    },
+                    {
+                        id: 102, title: 'Full Leg Day', date: getRelativeDateStr(3), notes: 'New PR',
+                        exercises: [
+                            { name: 'Barbell Back Squat', muscle: 'Legs', sets: 4, reps: 6, weight: 105 },
+                            { name: 'Romanian Deadlift', muscle: 'Legs', sets: 3, reps: 10, weight: 85 }
+                        ]
+                    }
+                ],
+                templates: [
+                    {
+                        id: 201, name: 'Full Chest & Triceps Day',
+                        exercises: [
+                            { name: 'Barbell Bench Press', muscle: 'Chest', sets: 4, reps: 8, weight: 80 },
+                            { name: 'Incline Dumbbell Press', muscle: 'Chest', sets: 3, reps: 10, weight: 30 },
+                            { name: 'Tricep Rope Pushdown', muscle: 'Triceps', sets: 3, reps: 12, weight: 25 }
+                        ]
+                    },
+                    {
+                        id: 202, name: 'Full Leg Day',
+                        exercises: [
+                            { name: 'Barbell Back Squat', muscle: 'Legs', sets: 4, reps: 6, weight: 105 },
+                            { name: 'Romanian Deadlift', muscle: 'Legs', sets: 3, reps: 10, weight: 85 }
+                        ]
+                    }
+                ],
+                metrics: [
+                    { id: 301, date: getRelativeDateStr(30), weight: 80.7, muscle: 41.2, fat: 17.6 },
+                    { id: 302, date: getRelativeDateStr(15), weight: 79.4, muscle: 42.1, fat: 16.3 },
+                    { id: 303, date: getRelativeDateStr(2),  weight: 78.8, muscle: 42.6, fat: 15.7 }
+                ]
+            };
+        }
+
+        let workouts = [];
+        let templates = [];
+        let metrics = [];
+        let activeTimeFilter = '30';
+        let compositionChart = null;
+        let toastTimer = null;
+        let activeSessionExercises = [{ name: '', muscle: 'Chest', sets: 3, reps: 10, weight: 60 }];
+        let editingRoutineId = null;
+        let builderExercises = [{ name: '', muscle: 'Chest', sets: 4, reps: 8, weight: 60 }];
+        let overviewMode = 'summary';
+
+        function loadAppState() {
+            const hasBeenInitialized = localStorage.getItem(STORAGE_KEYS.INITIALIZED);
+            const rawWorkouts = localStorage.getItem(STORAGE_KEYS.WORKOUTS);
+            const rawTemplates = localStorage.getItem(STORAGE_KEYS.TEMPLATES);
+            const rawMetrics = localStorage.getItem(STORAGE_KEYS.METRICS);
+
+            if (!hasBeenInitialized && !rawWorkouts && !rawTemplates && !rawMetrics) {
+                const demo = createDemoDataset();
+                workouts = demo.workouts;
+                templates = demo.templates;
+                metrics = demo.metrics;
+                saveAllState();
+                localStorage.setItem(STORAGE_KEYS.INITIALIZED, 'true');
+            } else {
+                try {
+                    workouts = rawWorkouts ? JSON.parse(rawWorkouts) : [];
+                    templates = rawTemplates ? JSON.parse(rawTemplates) : [];
+                    metrics = rawMetrics ? JSON.parse(rawMetrics) : [];
+                } catch (err) {
+                    workouts = []; templates = []; metrics = [];
+                }
+            }
+        }
+
+        function saveAllState() {
+            localStorage.setItem(STORAGE_KEYS.WORKOUTS, JSON.stringify(workouts));
+            localStorage.setItem(STORAGE_KEYS.TEMPLATES, JSON.stringify(templates));
+            localStorage.setItem(STORAGE_KEYS.METRICS, JSON.stringify(metrics));
+        }
+
+        function openShareModal() {
+            const modal = document.getElementById('share-modal');
+            const urlInput = document.getElementById('share-url-input');
+            const currentUrl = window.location.href;
+
+            if (urlInput) urlInput.value = currentUrl;
+            if (modal) modal.classList.remove('hidden');
+        }
+
+        function closeShareModal() {
+            const modal = document.getElementById('share-modal');
+            if (modal) modal.classList.add('hidden');
+        }
+
+        function copyAppUrl() {
+            const urlInput = document.getElementById('share-url-input');
+            if (!urlInput) return;
+            urlInput.select();
+            document.execCommand('copy');
+            showToast('Link copied to clipboard!');
+        }
+
+        function setOverviewMode(mode) {
+            overviewMode = mode;
+            const summaryContainer = document.getElementById('overview-summary-container');
+            const monthlyContainer = document.getElementById('overview-monthly-container');
+            const sumBtn = document.getElementById('ov-mode-summary');
+            const monBtn = document.getElementById('ov-mode-monthly');
+            const timeFilters = document.getElementById('summary-time-filters');
+
+            if (mode === 'summary') {
+                summaryContainer.classList.remove('hidden');
+                monthlyContainer.classList.add('hidden');
+                timeFilters.classList.remove('hidden');
+                sumBtn.className = 'py-2 text-xs font-bold rounded-lg bg-white text-slate-900 shadow-sm transition';
+                monBtn.className = 'py-2 text-xs font-semibold rounded-lg text-slate-600 hover:text-slate-900 transition';
+                renderOverview();
+            } else {
+                summaryContainer.classList.add('hidden');
+                monthlyContainer.classList.remove('hidden');
+                timeFilters.classList.add('hidden');
+                monBtn.className = 'py-2 text-xs font-bold rounded-lg bg-white text-slate-900 shadow-sm transition';
+                sumBtn.className = 'py-2 text-xs font-semibold rounded-lg text-slate-600 hover:text-slate-900 transition';
+                renderMonthlyBreakdown();
+            }
+        }
+
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(sec => sec.classList.add('hidden'));
+            document.getElementById(`tab-${tabName}`).classList.remove('hidden');
+
+            ['workouts', 'metrics', 'overview'].forEach(t => {
+                const btn = document.getElementById(`nav-${t}`);
+                if (t === tabName) {
+                    btn.className = 'flex flex-col items-center space-y-1 text-slate-900 font-bold py-1 px-4 rounded-xl transition';
+                } else {
+                    btn.className = 'flex flex-col items-center space-y-1 text-slate-400 hover:text-slate-700 font-medium py-1 px-4 rounded-xl transition';
+                }
+            });
+
+            const headerBadge = document.getElementById('header-active-badge');
+            if (tabName === 'overview') {
+                headerBadge.textContent = overviewMode === 'monthly' ? 'Monthly Breakdown' : 'Overview';
+                if (overviewMode === 'monthly') renderMonthlyBreakdown();
+                else renderOverview();
+            } else if (tabName === 'metrics') {
+                headerBadge.textContent = 'Body Metrics';
+            } else {
+                headerBadge.textContent = 'Workouts';
+            }
+        }
+
+        function switchWorkoutSubTab(subName) {
+            const logPanel = document.getElementById('workout-subtab-log');
+            const tplPanel = document.getElementById('workout-subtab-templates');
+            const logBtn = document.getElementById('subtab-btn-log');
+            const tplBtn = document.getElementById('subtab-btn-templates');
+
+            if (subName === 'log') {
+                logPanel.classList.remove('hidden');
+                tplPanel.classList.add('hidden');
+                logBtn.className = 'py-2 text-xs font-bold rounded-lg bg-white text-slate-900 shadow-sm transition';
+                tplBtn.className = 'py-2 text-xs font-semibold rounded-lg text-slate-600 hover:text-slate-900 transition';
+            } else {
+                tplPanel.classList.remove('hidden');
+                logPanel.classList.add('hidden');
+                tplBtn.className = 'py-2 text-xs font-bold rounded-lg bg-white text-slate-900 shadow-sm transition';
+                logBtn.className = 'py-2 text-xs font-semibold rounded-lg text-slate-600 hover:text-slate-900 transition';
+            }
+        }
+
+        function setTimeFilter(filterKey) {
+            activeTimeFilter = filterKey;
+            ['7', '30', '90', 'all'].forEach(key => {
+                const btn = document.getElementById(`filter-${key}`);
+                if (key === filterKey) btn.className = 'time-filter-btn py-2 text-xs font-bold rounded-lg bg-white text-slate-900 shadow-sm transition';
+                else btn.className = 'time-filter-btn py-2 text-xs font-semibold rounded-lg text-slate-700 transition';
+            });
+            renderOverview();
+        }
+
+        function isWithinActiveTimeFilter(dateStr) {
+            if (activeTimeFilter === 'all') return true;
+            const daysLimit = parseInt(activeTimeFilter, 10);
+            const cutoff = new Date();
+            cutoff.setHours(0, 0, 0, 0);
+            cutoff.setDate(cutoff.getDate() - daysLimit);
+            return new Date(dateStr + 'T00:00:00') >= cutoff;
+        }
+
+        function renderOverview() {
+            if (overviewMode === 'monthly') {
+                renderMonthlyBreakdown();
+                return;
+            }
+
+            const filteredWorkouts = workouts.filter(w => isWithinActiveTimeFilter(w.date));
+            let totalSets = 0, totalVolume = 0;
+            const setsByMuscle = {};
+            MUSCLE_GROUPS.forEach(m => { setsByMuscle[m.name] = 0; });
+
+            filteredWorkouts.forEach(session => {
+                (session.exercises || []).forEach(ex => {
+                    const s = Number(ex.sets) || 0;
+                    const r = Number(ex.reps) || 0;
+                    const w = Number(ex.weight) || 0;
+                    totalSets += s;
+                    totalVolume += s * r * w;
+                    const mName = MUSCLE_GROUPS.some(m => m.name === ex.muscle) ? ex.muscle : 'Chest';
+                    setsByMuscle[mName] = (setsByMuscle[mName] || 0) + s;
+                });
+            });
+
+            document.getElementById('kpi-workouts').textContent = filteredWorkouts.length;
+            document.getElementById('kpi-sets').textContent = totalSets;
+            document.getElementById('kpi-volume').textContent = Math.round(totalVolume).toLocaleString();
+
+            const muscleCardEl = document.getElementById('muscle-group-card');
+            const maxSets = Math.max(1, ...Object.values(setsByMuscle));
+            muscleCardEl.innerHTML = MUSCLE_GROUPS.map(group => {
+                const count = setsByMuscle[group.name] || 0;
+                const pct = count > 0 ? Math.max(6, Math.round((count / maxSets) * 100)) : 0;
+                return `
+                    <div class="flex items-center gap-3.5">
+                        <div class="w-24 shrink-0">
+                            <p class="text-sm font-bold text-slate-900 leading-tight">${group.name}</p>
+                            <p class="text-[11px] font-medium text-slate-400 mt-0.5">${count === 0 ? 'Not trained yet' : `${count} sets`}</p>
+                        </div>
+                        <div class="flex-1 h-3.5 bg-barEmpty rounded-full overflow-hidden">
+                            <div class="h-full rounded-full transition-all duration-500" style="width: ${pct}%; background-color: ${group.barColor};"></div>
+                        </div>
+                        <div class="w-8 text-right shrink-0"><span class="text-sm font-extrabold text-slate-900">${count}</span></div>
+                    </div>
+                `;
+            }).join('');
+
+            renderCompositionChart();
+        }
+
+        function renderMonthlyBreakdown() {
+            const listEl = document.getElementById('monthly-breakdown-list');
+            const badgeEl = document.getElementById('monthly-count-badge');
+            if (!listEl) return;
+
+            const monthlyMap = {};
+            workouts.forEach(session => {
+                if (!session.date) return;
+                const ym = session.date.slice(0, 7);
+                if (!monthlyMap[ym]) {
+                    monthlyMap[ym] = { ym, workoutCount: 0, totalSets: 0, totalVolume: 0, muscleSets: {} };
+                    MUSCLE_GROUPS.forEach(m => { monthlyMap[ym].muscleSets[m.name] = 0; });
+                }
+                monthlyMap[ym].workoutCount += 1;
+                (session.exercises || []).forEach(ex => {
+                    const s = Number(ex.sets) || 0;
+                    const r = Number(ex.reps) || 0;
+                    const w = Number(ex.weight) || 0;
+                    monthlyMap[ym].totalSets += s;
+                    monthlyMap[ym].totalVolume += s * r * w;
+                    const mName = MUSCLE_GROUPS.some(m => m.name === ex.muscle) ? ex.muscle : 'Chest';
+                    monthlyMap[ym].muscleSets[mName] += s;
+                });
+            });
+
+            const sortedMonths = Object.keys(monthlyMap).sort((a, b) => b.localeCompare(a));
+            if (badgeEl) badgeEl.textContent = `${sortedMonths.length} months`;
+
+            if (sortedMonths.length === 0) {
+                listEl.innerHTML = `<div class="bg-white border rounded-2xl p-8 text-center text-xs text-slate-400">No workout history available.</div>`;
+                return;
+            }
+
+            const monthNames = { '01': 'January', '02': 'February', '03': 'March', '04': 'April', '05': 'May', '06': 'June', '07': 'July', '08': 'August', '09': 'September', '10': 'October', '11': 'November', '12': 'December' };
+
+            listEl.innerHTML = sortedMonths.map(ym => {
+                const data = monthlyMap[ym];
+                const parts = ym.split('-');
+                const displayTitle = `${monthNames[parts[1]] || parts[1]} ${parts[0]}`;
+                const activeMuscles = MUSCLE_GROUPS.filter(m => data.muscleSets[m.name] > 0);
+
+                return `
+                    <div class="bg-white border border-slate-200/90 rounded-2xl p-4 sm:p-5 space-y-3.5">
+                        <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                            <div>
+                                <h3 class="text-base font-extrabold text-slate-900">${displayTitle}</h3>
+                                <p class="text-xs text-slate-500">${data.workoutCount} sessions logged</p>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-sm font-extrabold text-slate-900">${data.totalSets} sets</p>
+                                <p class="text-[11px] text-slate-500">${Math.round(data.totalVolume).toLocaleString()} kg</p>
+                            </div>
+                        </div>
+                        <div class="flex flex-wrap gap-2">
+                            ${activeMuscles.map(m => `<div class="px-2.5 py-1 rounded-lg border ${m.badgeBg} text-xs font-semibold">${m.name}: <b>${data.muscleSets[m.name]}</b></div>`).join('')}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderCompositionChart() {
+            const canvas = document.getElementById('compositionChart');
+            const wrapper = document.getElementById('composition-chart-wrapper');
+            const emptyState = document.getElementById('composition-empty-state');
+            if (!canvas) return;
+
+            const filteredMetrics = metrics.filter(m => isWithinActiveTimeFilter(m.date)).sort((a, b) => a.date.localeCompare(b.date));
+            const dataToPlot = filteredMetrics.length > 0 ? filteredMetrics : [...metrics].sort((a, b) => a.date.localeCompare(b.date));
+
+            if (dataToPlot.length === 0) {
+                wrapper.classList.add('hidden');
+                emptyState.classList.remove('hidden');
+                if (compositionChart) { compositionChart.destroy(); compositionChart = null; }
+                return;
+            }
+
+            wrapper.classList.remove('hidden');
+            emptyState.classList.add('hidden');
+
+            if (compositionChart) compositionChart.destroy();
+
+            compositionChart = new Chart(canvas.getContext('2d'), {
+                type: 'line',
+                data: {
+                    labels: dataToPlot.map(m => m.date.slice(5)),
+                    datasets: [
+                        { label: 'Weight (kg)', data: dataToPlot.map(m => m.weight), borderColor: '#0F172A', borderWidth: 2.5, tension: 0.3, yAxisID: 'yWeight' },
+                        { label: 'Muscle (%)', data: dataToPlot.map(m => m.muscle), borderColor: '#059669', borderWidth: 2.5, tension: 0.3, yAxisID: 'yPercent' },
+                        { label: 'Fat (%)', data: dataToPlot.map(m => m.fat), borderColor: '#D97706', borderWidth: 2.5, tension: 0.3, yAxisID: 'yPercent' }
+                    ]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    scales: {
+                        x: { grid: { display: false } },
+                        yWeight: { type: 'linear', position: 'left', grid: { color: '#F1F5F9' } },
+                        yPercent: { type: 'linear', position: 'right', grid: { drawOnChartArea: false } }
+                    }
+                }
+            });
+        }
+
+        function autoDetectMuscleGroup(name) {
+            const lower = name.toLowerCase();
+            for (const group of EXERCISE_KEYWORDS) {
+                for (const key of group.keys) {
+                    if (lower.includes(key)) return group.muscle;
+                }
+            }
+            return 'Chest';
+        }
+
+        function renderActiveSessionExercises() {
+            const container = document.getElementById('active-session-exercises');
+            document.getElementById('session-ex-count').textContent = activeSessionExercises.length;
+            container.innerHTML = activeSessionExercises.map((ex, idx) => `
+                <div class="bg-slate-50 border border-slate-200/80 rounded-xl p-3 space-y-2.5">
+                    <div class="flex items-center justify-between gap-2">
+                        <input type="text" placeholder="Exercise Name" value="${ex.name || ''}"
+                            oninput="updateActiveExerciseField(${idx}, 'name', this.value)"
+                            class="flex-1 bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs font-bold text-slate-900">
+                        <select onchange="updateActiveExerciseField(${idx}, 'muscle', this.value)"
+                            class="w-28 bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-[11px] font-semibold">
+                            ${MUSCLE_GROUPS.map(m => `<option value="${m.name}" ${ex.muscle === m.name ? 'selected' : ''}>${m.name}</option>`).join('')}
+                        </select>
+                        <button type="button" onclick="removeActiveExercise(${idx})" class="w-7 h-7 bg-white border text-rose-500 rounded-lg"><i class="fa-solid fa-trash text-[11px]"></i></button>
+                    </div>
+                    <div class="grid grid-cols-3 gap-2">
+                        <input type="number" min="1" value="${ex.sets || 3}" oninput="updateActiveExerciseField(${idx}, 'sets', this.value)" class="bg-white border rounded-lg p-1 text-xs text-center font-bold">
+                        <input type="number" min="1" value="${ex.reps || 10}" oninput="updateActiveExerciseField(${idx}, 'reps', this.value)" class="bg-white border rounded-lg p-1 text-xs text-center font-bold">
+                        <input type="number" step="0.5" value="${ex.weight || 0}" oninput="updateActiveExerciseField(${idx}, 'weight', this.value)" class="bg-white border rounded-lg p-1 text-xs text-center font-bold">
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function addExerciseToActiveSession() {
+            activeSessionExercises.push({ name: '', muscle: 'Chest', sets: 3, reps: 10, weight: 60 });
+            renderActiveSessionExercises();
+        }
+
+        function removeActiveExercise(idx) {
+            activeSessionExercises.splice(idx, 1);
+            renderActiveSessionExercises();
+        }
+
+        function updateActiveExerciseField(idx, field, val) {
+            if (!activeSessionExercises[idx]) return;
+            if (field === 'name') {
+                activeSessionExercises[idx].name = val;
+                activeSessionExercises[idx].muscle = autoDetectMuscleGroup(val);
+                renderActiveSessionExercises();
+            } else if (field === 'muscle') {
+                activeSessionExercises[idx].muscle = val;
+            } else {
+                activeSessionExercises[idx][field] = Number(val) || 0;
+            }
+        }
+
+        function resetActiveSession() {
+            document.getElementById('session-title').value = '';
+            document.getElementById('session-notes').value = '';
+            activeSessionExercises = [{ name: '', muscle: 'Chest', sets: 3, reps: 10, weight: 60 }];
+            renderActiveSessionExercises();
+        }
+
+        function applySelectedRoutine(templateId) {
+            if (!templateId) return;
+            const tpl = templates.find(t => String(t.id) === String(templateId));
+            if (!tpl) return;
+            document.getElementById('session-title').value = tpl.name;
+            activeSessionExercises = tpl.exercises.map(ex => ({ ...ex }));
+            renderActiveSessionExercises();
+            showToast(`Loaded: ${tpl.name}`);
+        }
+
+        function handleSaveWorkoutSession() {
+            const title = document.getElementById('session-title').value.trim();
+            const date = document.getElementById('session-date').value;
+            const notes = document.getElementById('session-notes').value.trim();
+            if (!date) { showToast('Select a date'); return; }
+
+            workouts.unshift({
+                id: Date.now(), title: title || 'Workout', date, notes,
+                exercises: activeSessionExercises.map(ex => ({ name: ex.name || 'Exercise', muscle: ex.muscle, sets: Number(ex.sets), reps: Number(ex.reps), weight: Number(ex.weight) }))
+            });
+            saveAllState();
+            renderWorkoutHistory();
+            renderOverview();
+            resetActiveSession();
+            showToast('Workout saved!');
+        }
+
+        function renderWorkoutHistory() {
+            const listEl = document.getElementById('workout-history-list');
+            document.getElementById('workout-history-count').textContent = `${workouts.length} sessions`;
+            if (workouts.length === 0) {
+                listEl.innerHTML = `<div class="bg-white border rounded-2xl p-8 text-center text-xs text-slate-400">No workouts logged yet.</div>`;
+                return;
+            }
+            listEl.innerHTML = workouts.map(s => `
+                <div class="bg-white border rounded-2xl p-4 space-y-3">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <span class="text-[11px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded">${s.date}</span>
+                            <h4 class="text-base font-extrabold text-slate-900 mt-1">${s.title}</h4>
+                        </div>
+                        <button onclick="confirmDeleteWorkout(${s.id})" class="text-slate-400 hover:text-rose-600"><i class="fa-solid fa-trash text-xs"></i></button>
+                    </div>
+                    <div class="space-y-1">
+                        ${s.exercises.map(ex => `<div class="text-xs bg-slate-50 px-3 py-1.5 rounded-lg flex justify-between"><span><b>${ex.name}</b></span><span>${ex.sets} sets × ${ex.reps} @ ${ex.weight}kg</span></div>`).join('')}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderRoutineBuilderExercises() {
+            const container = document.getElementById('routine-builder-exercises');
+            document.getElementById('builder-ex-count').textContent = builderExercises.length;
+            container.innerHTML = builderExercises.map((ex, idx) => `
+                <div class="bg-slate-50 border rounded-xl p-3 space-y-2">
+                    <div class="flex gap-2">
+                        <input type="text" value="${ex.name || ''}" oninput="builderExercises[${idx}].name=this.value; builderExercises[${idx}].muscle=autoDetectMuscleGroup(this.value);" class="flex-1 bg-white border rounded-lg px-2 py-1 text-xs font-bold">
+                        <button onclick="builderExercises.splice(${idx},1); renderRoutineBuilderExercises();" class="text-rose-500"><i class="fa-solid fa-trash text-xs"></i></button>
+                    </div>
+                    <div class="grid grid-cols-3 gap-2">
+                        <input type="number" value="${ex.sets}" oninput="builderExercises[${idx}].sets=Number(this.value)" class="bg-white border text-center text-xs p-1">
+                        <input type="number" value="${ex.reps}" oninput="builderExercises[${idx}].reps=Number(this.value)" class="bg-white border text-center text-xs p-1">
+                        <input type="number" value="${ex.weight}" oninput="builderExercises[${idx}].weight=Number(this.value)" class="bg-white border text-center text-xs p-1">
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function addExerciseToRoutineBuilder() {
+            builderExercises.push({ name: '', muscle: 'Chest', sets: 4, reps: 8, weight: 60 });
+            renderRoutineBuilderExercises();
+        }
+
+        function handleSaveRoutineTemplate() {
+            const name = document.getElementById('routine-name-input').value.trim();
+            if (!name) { showToast('Enter routine name'); return; }
+            templates.push({ id: Date.now(), name, exercises: [...builderExercises] });
+            saveAllState();
+            renderTemplatesUI();
+            showToast('Routine saved!');
+        }
+
+        function renderTemplatesUI() {
+            const listEl = document.getElementById('templates-list');
+            document.getElementById('templates-list-count').textContent = `${templates.length} routines`;
+            document.getElementById('tpl-tab-badge').textContent = templates.length;
+            document.getElementById('load-template-select').innerHTML = `<option value="">-- Choose routine --</option>` + templates.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
+            
+            listEl.innerHTML = templates.map(t => `
+                <div class="bg-white border rounded-2xl p-4 space-y-2">
+                    <div class="flex justify-between"><h4 class="font-extrabold text-slate-900">${t.name}</h4><button onclick="templates=templates.filter(x=>x.id!==${t.id}); saveAllState(); renderTemplatesUI();" class="text-rose-500"><i class="fa-solid fa-trash text-xs"></i></button></div>
+                    <button onclick="applySelectedRoutine(${t.id}); switchWorkoutSubTab('log');" class="w-full bg-blue-50 text-blue-700 py-2 rounded-xl text-xs font-bold">Load Routine</button>
+                </div>
+            `).join('');
+        }
+
+        function handleMetricsSubmit(e) {
+            e.preventDefault();
+            metrics.push({
+                id: Date.now(),
+                date: document.getElementById('m-date').value,
+                weight: Number(document.getElementById('m-weight').value),
+                muscle: Number(document.getElementById('m-muscle').value),
+                fat: Number(document.getElementById('m-fat').value)
+            });
+            saveAllState();
+            renderMetricsTable();
+            renderOverview();
+            showToast('Metrics saved!');
+        }
+
+        function renderMetricsTable() {
+            const tbody = document.getElementById('metrics-table-body');
+            document.getElementById('metrics-history-count').textContent = `${metrics.length} entries`;
+            tbody.innerHTML = metrics.map(m => `
+                <tr>
+                    <td class="py-3 px-3.5 font-bold">${m.date}</td>
+                    <td class="py-3 px-2.5">${m.weight} kg</td>
+                    <td class="py-3 px-2.5 text-emerald-600 font-bold">${m.muscle}%</td>
+                    <td class="py-3 px-2.5 text-amber-600 font-bold">${m.fat}%</td>
+                    <td class="py-3 px-3.5 text-right"><button onclick="metrics=metrics.filter(x=>x.id!==${m.id}); saveAllState(); renderMetricsTable(); renderOverview();" class="text-rose-500"><i class="fa-solid fa-trash text-xs"></i></button></td>
+                </tr>
+            `).join('');
+        }
+
+        function showConfirmModal(title, msg, onOk) {
+            const modal = document.getElementById('confirm-modal');
+            document.getElementById('confirm-modal-title').textContent = title;
+            document.getElementById('confirm-modal-msg').textContent = msg;
+            modal.classList.remove('hidden');
+            const okBtn = document.getElementById('confirm-modal-ok');
+            const cancelBtn = document.getElementById('confirm-modal-cancel');
+            const newOk = okBtn.cloneNode(true);
+            const newCancel = cancelBtn.cloneNode(true);
+            okBtn.parentNode.replaceChild(newOk, okBtn);
+            cancelBtn.parentNode.replaceChild(newCancel, cancelBtn);
+            newOk.onclick = () => { modal.classList.add('hidden'); onOk(); };
+            newCancel.onclick = () => { modal.classList.add('hidden'); };
+        }
+
+        function confirmDeleteWorkout(id) {
+            showConfirmModal('Delete Workout', 'Delete this session?', () => {
+                workouts = workouts.filter(w => w.id !== id);
+                saveAllState(); renderWorkoutHistory(); renderOverview();
+                showToast('Deleted');
+            });
+        }
+
+        function confirmResetDemoData() {
+            showConfirmModal('Reset Demo', 'Replace data with starter demo?', () => {
+                const demo = createDemoDataset();
+                workouts = demo.workouts; templates = demo.templates; metrics = demo.metrics;
+                saveAllState(); initAll();
+                showToast('Reset complete');
+            });
+        }
+
+        function confirmClearAllData() {
+            showConfirmModal('Clear All', 'Wipe all records?', () => {
+                workouts = []; templates = []; metrics = [];
+                saveAllState(); initAll();
+                showToast('Cleared');
+            });
+        }
+
+        function showToast(msg) {
+            const banner = document.getElementById('toast-banner');
+            document.getElementById('toast-text').textContent = msg;
+            banner.classList.remove('opacity-0', 'translate-y-[-8px]');
+            banner.classList.add('opacity-100', 'translate-y-0');
+            if (toastTimer) clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => {
+                banner.classList.remove('opacity-100', 'translate-y-0');
+                banner.classList.add('opacity-0', 'translate-y-[-8px]');
+            }, 2500);
+        }
+
+        function initAll() {
+            loadAppState();
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('session-date').value = today;
+            document.getElementById('m-date').value = today;
+            renderActiveSessionExercises();
+            renderWorkoutHistory();
+            renderRoutineBuilderExercises();
+            renderTemplatesUI();
+            renderMetricsTable();
+            renderOverview();
+        }
+
+        window.addEventListener('DOMContentLoaded', initAll);
+    </script>
+</body>
+</html>
